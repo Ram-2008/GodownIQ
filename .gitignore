@@ -1,0 +1,15 @@
+node_modules/
+dist/
+build/
+.vitest-tmp/
+.env
+.env.local
+*.log
+.DS_Store
+coverage/
+.vercel/
+.railway/
+.claude/
+frontend/vite.config.js
+frontend/vite.config.d.ts
+*.tsbuildinfo
