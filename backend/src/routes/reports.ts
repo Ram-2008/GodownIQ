@@ -3,7 +3,7 @@ import { endOfMonth, format } from "date-fns";
 import { authenticate, requireOwner } from "../middleware/auth";
 import { asyncHandler } from "../middleware/asyncHandler";
 import { monthQuerySchema } from "../validation/reports";
-import { exportPurchasesCsv, exportStockMovementsCsv, getMonthlyReport } from "../services/reportsService";
+import { exportExpensesCsv, exportPurchasesCsv, exportStockMovementsCsv, getMonthlyReport } from "../services/reportsService";
 
 export const reportsRouter = Router();
 
@@ -41,6 +41,18 @@ reportsRouter.get(
   asyncHandler(async (req, res) => {
     const csv = await exportPurchasesCsv(req.supabase!);
     sendCsv(res, "godowniq-full-backup.csv", csv);
+  })
+);
+
+reportsRouter.get(
+  "/expenses.csv",
+  asyncHandler(async (req, res) => {
+    const { year, month } = monthQuerySchema.parse(req.query);
+    const monthStartDate = new Date(year, month - 1, 1);
+    const from = format(monthStartDate, "yyyy-MM-dd");
+    const to = format(endOfMonth(monthStartDate), "yyyy-MM-dd");
+    const csv = await exportExpensesCsv(req.supabase!, { from, to });
+    sendCsv(res, `expenses-${year}-${String(month).padStart(2, "0")}.csv`, csv);
   })
 );
 

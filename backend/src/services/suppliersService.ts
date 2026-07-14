@@ -2,8 +2,10 @@ import { SupabaseClient } from "@supabase/supabase-js";
 import { ApiError, BadRequestError } from "../middleware/errors";
 import { Supplier } from "../types/domain";
 
-export async function listSuppliers(db: SupabaseClient): Promise<Supplier[]> {
-  const { data, error } = await db.from("suppliers").select("*").order("name");
+export async function listSuppliers(db: SupabaseClient, q?: string): Promise<Supplier[]> {
+  let query = db.from("suppliers").select("*").order("name");
+  if (q) query = query.ilike("name", `%${q.replace(/[%_]/g, "\\$&")}%`);
+  const { data, error } = await query;
   if (error) throw new ApiError(500, error.message);
   return data as Supplier[];
 }

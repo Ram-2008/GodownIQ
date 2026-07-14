@@ -12,7 +12,8 @@ suppliersRouter.use(authenticate);
 suppliersRouter.get(
   "/",
   asyncHandler(async (req, res) => {
-    const suppliers = await listSuppliers(req.supabase!);
+    const q = typeof req.query.q === "string" ? req.query.q.trim() || undefined : undefined;
+    const suppliers = await listSuppliers(req.supabase!, q);
     res.json({ suppliers });
   })
 );

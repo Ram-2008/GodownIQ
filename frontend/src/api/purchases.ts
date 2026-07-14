@@ -38,6 +38,7 @@ export interface ListPurchasesParams {
   from?: string;
   to?: string;
   item_id?: string;
+  q?: string;
   page?: number;
   page_size?: number;
 }
@@ -60,5 +61,6 @@ export const purchasesApi = {
   update: (id: string, payload: UpdatePurchasePayload) =>
     api.patch<{ purchase: Purchase }>(`/purchases/${id}`, payload).then((r) => r.purchase),
   remove: (id: string) => api.delete<void>(`/purchases/${id}`),
+  billImageUrl: (id: string) => api.get<{ url: string }>(`/purchases/${id}/bill-image`).then((r) => r.url),
   markPaid: (id: string) => api.post<{ purchase: Purchase }>(`/purchases/${id}/mark-paid`).then((r) => r.purchase),
 };

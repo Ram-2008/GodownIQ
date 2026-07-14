@@ -3,9 +3,36 @@ import { differenceInCalendarDays, format, subDays } from "date-fns";
 import { formatINR } from "../utils/format";
 import { Item } from "../types/domain";
 import { supabaseAdmin } from "../config/supabase";
+import { env } from "../config/env";
+import { sendWhatsappMessage } from "./twilioService";
 
 const ANOMALY_THRESHOLD_PCT = 15;
 const ANOMALY_WINDOW_DAYS = 90;
+
+// Alert types that are urgent/actionable enough to push outbound, beyond the in-app panel.
+const OUTBOUND_ALERT_TYPES = new Set(["low_stock", "payment_overdue"]);
+
+export function shouldNotifyOutbound(type: string): boolean {
+  return OUTBOUND_ALERT_TYPES.has(type);
+}
+
+/** Best-effort outbound push to every owner with a WhatsApp number on file. Never throws. */
+async function notifyOwnersByWhatsapp(message: string): Promise<void> {
+  if (!env.twilioConfigured) return;
+  const { data, error } = await supabaseAdmin.from("profiles").select("whatsapp_number").eq("role", "owner").not("whatsapp_number", "is", null);
+  if (error) {
+    console.error("Failed to look up owner WhatsApp numbers for outbound alert:", error.message);
+    return;
+  }
+  for (const row of (data ?? []) as { whatsapp_number: string | null }[]) {
+    if (!row.whatsapp_number) continue;
+    try {
+      await sendWhatsappMessage(row.whatsapp_number, `GodownIQ alert: ${message}`);
+    } catch (err) {
+      console.error("Failed to send outbound WhatsApp alert:", err);
+    }
+  }
+}
 
 export function computeAnomalyPct(unitPrice: number, avgPrice: number): number {
   if (avgPrice <= 0) return 0;
@@ -21,7 +48,11 @@ export async function createAlert(
   relatedId: string | null
 ): Promise<void> {
   const { error } = await supabaseAdmin.from("alerts").insert({ type, message, related_id: relatedId });
-  if (error) console.error(`Failed to create ${type} alert:`, error.message);
+  if (error) {
+    console.error(`Failed to create ${type} alert:`, error.message);
+    return;
+  }
+  if (shouldNotifyOutbound(type)) await notifyOwnersByWhatsapp(message);
 }
 
 export async function hasActiveAlert(db: SupabaseClient, type: string, relatedId: string): Promise<boolean> {

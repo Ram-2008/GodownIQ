@@ -6,6 +6,8 @@ import { Alert } from "../types/domain";
 export interface DashboardSummary {
   today_spend: number;
   month_spend: number;
+  today_expenses: number;
+  month_expenses: number;
   pending_total: number;
   active_alerts_count: number;
   daily_spend: { date: string; total: number }[];
@@ -60,6 +62,20 @@ export async function getDashboardSummary(db: SupabaseClient): Promise<Dashboard
   if (pendingError) throw new ApiError(500, pendingError.message);
   const pendingTotal = (pendingData ?? []).reduce((sum, r: { total_amount: number }) => sum + r.total_amount, 0);
 
+  const { data: monthExpenseData, error: monthExpenseError } = await db
+    .from("expenses")
+    .select("expense_date, amount")
+    .is("deleted_at", null)
+    .gte("expense_date", monthStart)
+    .lte("expense_date", today);
+  if (monthExpenseError) throw new ApiError(500, monthExpenseError.message);
+  let monthExpenses = 0;
+  let todayExpenses = 0;
+  for (const e of (monthExpenseData ?? []) as { expense_date: string; amount: number }[]) {
+    monthExpenses += e.amount;
+    if (e.expense_date === today) todayExpenses += e.amount;
+  }
+
   const { data: alertsData, error: alertsError } = await db
     .from("alerts")
     .select("*")
@@ -71,6 +87,8 @@ export async function getDashboardSummary(db: SupabaseClient): Promise<Dashboard
   return {
     today_spend: todaySpend,
     month_spend: monthSpend,
+    today_expenses: todayExpenses,
+    month_expenses: monthExpenses,
     pending_total: pendingTotal,
     active_alerts_count: (alertsData ?? []).length,
     daily_spend: [...dailyMap.entries()].sort(([a], [b]) => a.localeCompare(b)).map(([date, total]) => ({ date, total })),

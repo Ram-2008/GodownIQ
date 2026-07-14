@@ -5,6 +5,7 @@ export interface AuthenticatedProfile {
   full_name: string;
   role: "owner" | "staff";
   whatsapp_number: string | null;
+  approval_status: "pending" | "approved" | "rejected" | "revoked";
 }
 
 declare global {

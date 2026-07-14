@@ -12,7 +12,8 @@ itemsRouter.use(authenticate);
 itemsRouter.get(
   "/",
   asyncHandler(async (req, res) => {
-    const items = await listItems(req.supabase!);
+    const q = typeof req.query.q === "string" ? req.query.q.trim() || undefined : undefined;
+    const items = await listItems(req.supabase!, q);
     res.json({ items });
   })
 );

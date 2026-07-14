@@ -6,8 +6,13 @@ import { AppLayout } from "./layout/AppLayout";
 import { FullScreenSpinner } from "./components/FullScreenSpinner";
 import { LoginPage } from "./pages/Login";
 import { SignupPage } from "./pages/Signup";
+import { StaffSignupRequestPage } from "./pages/StaffSignupRequest";
+import { ForgotPasswordPage } from "./pages/ForgotPassword";
+import { ResetPasswordPage } from "./pages/ResetPassword";
 
 const PurchaseEntryPage = lazy(() => import("./pages/PurchaseEntry").then((m) => ({ default: m.PurchaseEntryPage })));
+const PurchaseHistoryPage = lazy(() => import("./pages/PurchaseHistory").then((m) => ({ default: m.PurchaseHistoryPage })));
+const ExpensesPage = lazy(() => import("./pages/Expenses").then((m) => ({ default: m.ExpensesPage })));
 const DashboardPage = lazy(() => import("./pages/Dashboard").then((m) => ({ default: m.DashboardPage })));
 const CalendarPage = lazy(() => import("./pages/Calendar").then((m) => ({ default: m.CalendarPage })));
 const StockPage = lazy(() => import("./pages/Stock").then((m) => ({ default: m.StockPage })));
@@ -26,6 +31,9 @@ export default function App() {
         <Routes>
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
+          <Route path="/request-access" element={<StaffSignupRequestPage />} />
+          <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+          <Route path="/reset-password" element={<ResetPasswordPage />} />
 
           <Route
             path="/"
@@ -48,6 +56,16 @@ export default function App() {
             }
           />
           <Route
+            path="/purchases"
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <PurchaseHistoryPage />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
             path="/calendar"
             element={
               <ProtectedRoute>
@@ -63,6 +81,16 @@ export default function App() {
               <ProtectedRoute>
                 <AppLayout>
                   <StockPage />
+                </AppLayout>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/expenses"
+            element={
+              <ProtectedRoute>
+                <AppLayout>
+                  <ExpensesPage />
                 </AppLayout>
               </ProtectedRoute>
             }

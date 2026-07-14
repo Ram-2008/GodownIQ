@@ -8,6 +8,7 @@ import {
 } from "../validation/purchases";
 import {
   createPurchase,
+  getPurchaseBillImageUrl,
   getPurchaseById,
   listPurchases,
   markPurchasePaid,
@@ -36,6 +37,7 @@ purchasesRouter.get(
       from: query.from,
       to: query.to,
       itemId: query.item_id,
+      q: query.q,
       page: query.page,
       pageSize: query.page_size,
     });
@@ -74,6 +76,14 @@ purchasesRouter.delete(
   asyncHandler(async (req, res) => {
     await softDeletePurchase(req.supabase!, req.profile!, req.params.id);
     res.status(204).send();
+  })
+);
+
+purchasesRouter.get(
+  "/:id/bill-image",
+  asyncHandler(async (req, res) => {
+    const url = await getPurchaseBillImageUrl(req.supabase!, req.params.id);
+    res.json({ url });
   })
 );
 

@@ -66,6 +66,7 @@ export const listPurchasesQuerySchema = z.object({
   from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   item_id: z.string().uuid().optional(),
+  q: z.string().trim().min(1).max(120).optional(),
   page: z.coerce.number().int().positive().default(1),
   page_size: z.coerce.number().int().positive().max(200).default(50),
 });

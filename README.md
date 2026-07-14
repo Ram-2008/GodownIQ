@@ -92,8 +92,12 @@ Fill in `frontend/.env`:
    your new user's ID — find it in **Authentication → Users**):
 
    ```sql
-   update profiles set role = 'owner' where id = '<your-user-uuid>';
+   update profiles set role = 'owner', approval_status = 'approved' where id = '<your-user-uuid>';
    ```
+
+   The `approval_status = 'approved'` part matters: every self-signup (including this
+   one) now lands `pending` by default until someone approves it, so this promotion
+   step is also what approves the very first account.
 
 3. Sign in again (or refresh) — you now have full owner access, including inviting
    staff from the **Staff** page.
@@ -203,8 +207,11 @@ nothing is ever auto-saved on an ambiguous read.
 
 ### Signing in
 
-Owner and staff each sign in with their own email and password. The owner invites
-staff from the **Staff** page — an invite email is sent automatically.
+Owner and staff each sign in with their own email and password. There are two ways a
+staff member gets access: the owner invites them by email from the **Staff** page
+(an invite email is sent automatically and they're active immediately), or a staff
+member requests access themselves from the "Request access" link on the login page —
+that account can't sign in until the owner approves it from the **Staff** page.
 
 ### Adding a purchase — four ways
 

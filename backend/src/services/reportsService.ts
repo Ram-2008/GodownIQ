@@ -10,6 +10,8 @@ export interface MonthlyReport {
   pending_amount: number;
   per_item: { item_id: string; item_name: string; quantity: number; avg_price: number; total: number }[];
   per_supplier: { supplier_id: string | null; supplier_name: string; total: number }[];
+  expenses_total: number;
+  per_category: { category: string; total: number }[];
 }
 
 type ReportRow = {
@@ -61,6 +63,21 @@ export async function getMonthlyReport(db: SupabaseClient, year: number, month: 
     perSupplier.set(supplierKey, supplierEntry);
   }
 
+  const { data: expenseData, error: expenseError } = await db
+    .from("expenses")
+    .select("category, amount")
+    .is("deleted_at", null)
+    .gte("expense_date", monthStart)
+    .lte("expense_date", monthEnd);
+  if (expenseError) throw new ApiError(500, expenseError.message);
+
+  let expensesTotal = 0;
+  const perCategory = new Map<string, number>();
+  for (const e of (expenseData ?? []) as { category: string; amount: number }[]) {
+    expensesTotal += e.amount;
+    perCategory.set(e.category, (perCategory.get(e.category) ?? 0) + e.amount);
+  }
+
   return {
     total_spend: totalSpend,
     gst_total: gstTotal,
@@ -71,6 +88,8 @@ export async function getMonthlyReport(db: SupabaseClient, year: number, month: 
     per_supplier: [...perSupplier.entries()]
       .map(([supplier_id, v]) => ({ supplier_id: supplier_id === "none" ? null : supplier_id, supplier_name: v.name, total: v.total }))
       .sort((a, b) => b.total - a.total),
+    expenses_total: expensesTotal,
+    per_category: [...perCategory.entries()].map(([category, total]) => ({ category, total })).sort((a, b) => b.total - a.total),
   };
 }
 
@@ -123,6 +142,34 @@ export async function exportPurchasesCsv(db: SupabaseClient, range?: { from: str
   ]);
 
   return buildCsv(PURCHASE_CSV_HEADERS, rows);
+}
+
+const EXPENSE_CSV_HEADERS = ["Date", "Category", "Description", "Amount", "Payment Status", "Payment Due Date", "Created By", "Note"];
+
+export async function exportExpensesCsv(db: SupabaseClient, range?: { from: string; to: string }): Promise<string> {
+  let query = db
+    .from("expenses")
+    .select("expense_date, category, description, amount, payment_status, payment_due_date, note, profiles(full_name)")
+    .is("deleted_at", null)
+    .order("expense_date", { ascending: true });
+
+  if (range) query = query.gte("expense_date", range.from).lte("expense_date", range.to);
+
+  const { data, error } = await query;
+  if (error) throw new ApiError(500, error.message);
+
+  const rows = (data ?? []).map((r: any) => [
+    formatDDMMYYYY(r.expense_date),
+    r.category,
+    r.description,
+    formatINR(r.amount),
+    r.payment_status,
+    formatDDMMYYYY(r.payment_due_date),
+    r.profiles?.full_name ?? "",
+    r.note ?? "",
+  ]);
+
+  return buildCsv(EXPENSE_CSV_HEADERS, rows);
 }
 
 const STOCK_MOVEMENT_CSV_HEADERS = ["Date", "Item", "Type", "Quantity", "Note", "Created By"];

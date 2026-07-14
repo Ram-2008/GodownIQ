@@ -1,6 +1,29 @@
-import { describe, expect, it } from "vitest";
-import { buildConfirmationReply, buildTwiml, stripWhatsappPrefix } from "../twilioService";
+import { describe, expect, it, vi, beforeEach } from "vitest";
+import { buildConfirmationReply, buildTwiml, sendWhatsappMessage, stripWhatsappPrefix } from "../twilioService";
 import { PurchaseWithNames } from "../purchaseService";
+
+const createMock = vi.fn().mockResolvedValue({ sid: "SM123" });
+
+// Only fake the outbound-send path (`messages.create`, which would otherwise hit the
+// real Twilio API). `validateRequest` and `twiml.MessagingResponse` are real —
+// they're pure/local, so exercising them for real keeps the existing tests meaningful.
+vi.mock("twilio", async (importOriginal) => {
+  const actual = await importOriginal<any>();
+  const realTwilio = actual.default;
+  const mockFactory: any = vi.fn(() => ({ messages: { create: createMock } }));
+  mockFactory.validateRequest = realTwilio.validateRequest;
+  mockFactory.twiml = realTwilio.twiml;
+  return { ...actual, default: mockFactory };
+});
+
+vi.mock("../../config/env", () => ({
+  env: {
+    twilioConfigured: true,
+    TWILIO_ACCOUNT_SID: "AC_test",
+    TWILIO_AUTH_TOKEN: "test_token",
+    TWILIO_WHATSAPP_NUMBER: "+10000000000",
+  },
+}));
 
 function fakePurchase(overrides: Partial<PurchaseWithNames> = {}): PurchaseWithNames {
   return {
@@ -20,6 +43,7 @@ function fakePurchase(overrides: Partial<PurchaseWithNames> = {}): PurchaseWithN
     payment_due_date: null,
     note: null,
     entry_source: "whatsapp",
+    bill_image_path: null,
     created_by: "u1",
     created_at: "2026-07-09T00:00:00.000Z",
     updated_at: "2026-07-09T00:00:00.000Z",
@@ -65,5 +89,25 @@ describe("buildTwiml", () => {
     const xml = buildTwiml("hello world");
     expect(xml).toContain("<Message>hello world</Message>");
     expect(xml).toContain("<Response>");
+  });
+});
+
+describe("sendWhatsappMessage", () => {
+  beforeEach(() => {
+    createMock.mockClear();
+  });
+
+  it("sends via the Twilio REST client with whatsapp: prefixes on both ends", async () => {
+    await sendWhatsappMessage("+919876543210", "Stock is low");
+    expect(createMock).toHaveBeenCalledWith({
+      from: "whatsapp:+10000000000",
+      to: "whatsapp:+919876543210",
+      body: "Stock is low",
+    });
+  });
+
+  it("strips an existing whatsapp: prefix from the recipient before re-adding it", async () => {
+    await sendWhatsappMessage("whatsapp:+919876543210", "hi");
+    expect(createMock).toHaveBeenCalledWith(expect.objectContaining({ to: "whatsapp:+919876543210" }));
   });
 });

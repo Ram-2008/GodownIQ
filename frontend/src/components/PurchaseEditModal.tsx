@@ -36,6 +36,7 @@ export function PurchaseEditModal({
   const [note, setNote] = useState(purchase.note ?? "");
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [loadingBill, setLoadingBill] = useState(false);
 
   useEffect(() => {
     suppliersApi.list().then(setSuppliers).catch(() => undefined);
@@ -66,6 +67,18 @@ export function PurchaseEditModal({
       show(err instanceof Error ? err.message : "Could not update the purchase.", "error");
     } finally {
       setSaving(false);
+    }
+  }
+
+  async function handleViewBill() {
+    setLoadingBill(true);
+    try {
+      const url = await purchasesApi.billImageUrl(purchase.id);
+      window.open(url, "_blank", "noopener,noreferrer");
+    } catch (err) {
+      show(err instanceof Error ? err.message : "Could not load the bill photo.", "error");
+    } finally {
+      setLoadingBill(false);
     }
   }
 
@@ -141,6 +154,12 @@ export function PurchaseEditModal({
           )}
         </div>
         <Input label="Note" value={note} onChange={(e) => setNote(e.target.value)} />
+
+        {purchase.bill_image_path && (
+          <Button variant="secondary" onClick={handleViewBill} loading={loadingBill}>
+            View bill photo
+          </Button>
+        )}
 
         <div className="flex gap-2">
           <Button variant="danger" onClick={handleDelete} loading={deleting} className="flex-1">

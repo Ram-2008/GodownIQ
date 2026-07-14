@@ -4,7 +4,7 @@ import { Button } from "./ui/Button";
 import { Input } from "./ui/Input";
 import { Select } from "./ui/Select";
 import { useToast } from "./Toast";
-import { photoEntryApi, PhotoParseResult } from "../api/photoEntry";
+import { fileToBase64, photoEntryApi, PhotoParseResult } from "../api/photoEntry";
 import { ApiClientError } from "../api/client";
 import { UNITS, Unit } from "../types/domain";
 import { todayISO } from "../utils/date";
@@ -40,6 +40,7 @@ export function PhotoBillEntry({ onSaved }: { onSaved: () => void }) {
   const [purchaseDate, setPurchaseDate] = useState(todayISO());
   const [gstAmount, setGstAmount] = useState("");
   const [rows, setRows] = useState<ReviewRow[]>([]);
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
   function reset() {
     setSupplierName("");
@@ -48,12 +49,14 @@ export function PhotoBillEntry({ onSaved }: { onSaved: () => void }) {
     setGstAmount("");
     setRows([]);
     setParseFailed(false);
+    setSelectedFile(null);
   }
 
   async function handleFileSelected(file: File) {
     setOpen(true);
     setParsing(true);
     setParseFailed(false);
+    setSelectedFile(file);
     try {
       const result = await photoEntryApi.parse(file);
       setSupplierName(result.supplier_name ?? "");
@@ -84,12 +87,16 @@ export function PhotoBillEntry({ onSaved }: { onSaved: () => void }) {
         unit_price: parseFloat(r.unit_price),
         total_amount: parseFloat(r.total_amount),
       }));
+      const image_base64 = selectedFile ? await fileToBase64(selectedFile) : undefined;
+      const media_type = selectedFile ? ((selectedFile.type || "image/jpeg") as "image/jpeg" | "image/png" | "image/webp") : undefined;
       await photoEntryApi.save({
         supplier_name: supplierName.trim() || undefined,
         invoice_number: invoiceNumber.trim() || undefined,
         purchase_date: purchaseDate,
         gst_amount: gstAmount ? parseFloat(gstAmount) : undefined,
         line_items,
+        image_base64,
+        media_type,
       });
       show(`Saved ${line_items.length} purchase${line_items.length === 1 ? "" : "s"} from the bill.`, "success");
       setOpen(false);

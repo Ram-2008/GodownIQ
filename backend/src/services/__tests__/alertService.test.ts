@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeAnomalyPct, detectCadence } from "../alertService";
+import { computeAnomalyPct, detectCadence, shouldNotifyOutbound } from "../alertService";
 
 describe("computeAnomalyPct", () => {
   it("matches the spec's worked example (₹48 vs ₹41 average is ~17% over)", () => {
@@ -42,5 +42,17 @@ describe("detectCadence", () => {
     const dates = ["2026-01-01", "2026-01-06", "2026-01-09", "2026-01-14", "2026-01-17"];
     const result = detectCadence(dates);
     expect(result!.isConsistent).toBe(true);
+  });
+});
+
+describe("shouldNotifyOutbound", () => {
+  it("pushes low_stock and payment_overdue outbound", () => {
+    expect(shouldNotifyOutbound("low_stock")).toBe(true);
+    expect(shouldNotifyOutbound("payment_overdue")).toBe(true);
+  });
+
+  it("keeps price_anomaly and reorder_reminder dashboard-only", () => {
+    expect(shouldNotifyOutbound("price_anomaly")).toBe(false);
+    expect(shouldNotifyOutbound("reorder_reminder")).toBe(false);
   });
 });

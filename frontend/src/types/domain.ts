@@ -3,6 +3,9 @@ export type PaymentStatus = "paid" | "pending";
 export type EntrySource = "form" | "quick_chip" | "nl_text" | "whatsapp" | "photo";
 export type MovementType = "in" | "out" | "adjustment";
 export type AlertType = "price_anomaly" | "low_stock" | "payment_overdue" | "reorder_reminder";
+export type ExpenseCategory = "rent" | "salaries" | "utilities" | "maintenance" | "transport" | "other";
+
+export const EXPENSE_CATEGORIES: ExpenseCategory[] = ["rent", "salaries", "utilities", "maintenance", "transport", "other"];
 
 export const UNITS: Unit[] = ["kg", "litre", "pieces", "bags", "quintal"];
 
@@ -40,6 +43,22 @@ export interface Purchase {
   payment_due_date: string | null;
   note: string | null;
   entry_source: EntrySource;
+  bill_image_path: string | null;
+  created_by: string;
+  created_at: string;
+  updated_at: string;
+  deleted_at: string | null;
+}
+
+export interface Expense {
+  id: string;
+  category: ExpenseCategory;
+  description: string;
+  amount: number;
+  expense_date: string;
+  payment_status: PaymentStatus;
+  payment_due_date: string | null;
+  note: string | null;
   created_by: string;
   created_at: string;
   updated_at: string;

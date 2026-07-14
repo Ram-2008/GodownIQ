@@ -100,5 +100,7 @@ export const savePhotoEntrySchema = z.object({
   purchase_date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
   gst_amount: z.number().nonnegative().optional(),
   line_items: z.array(confirmedLineItemSchema).min(1),
+  image_base64: z.string().min(100).optional(),
+  media_type: z.enum(["image/jpeg", "image/png", "image/webp"]).optional(),
 });
 export type SavePhotoEntryInput = z.infer<typeof savePhotoEntrySchema>;

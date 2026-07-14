@@ -8,6 +8,7 @@ import { authRouter } from "./routes/auth";
 import { itemsRouter } from "./routes/items";
 import { suppliersRouter } from "./routes/suppliers";
 import { purchasesRouter } from "./routes/purchases";
+import { expensesRouter } from "./routes/expenses";
 import { dashboardRouter } from "./routes/dashboard";
 import { calendarRouter } from "./routes/calendar";
 import { alertsRouter } from "./routes/alerts";
@@ -45,6 +46,7 @@ export function createApp() {
   app.use("/api/items", itemsRouter);
   app.use("/api/suppliers", suppliersRouter);
   app.use("/api/purchases", purchasesRouter);
+  app.use("/api/expenses", expensesRouter);
   app.use("/api/dashboard", dashboardRouter);
   app.use("/api/calendar", calendarRouter);
   app.use("/api/alerts", alertsRouter);

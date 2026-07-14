@@ -4,6 +4,8 @@ import { Alert, Item } from "../types/domain";
 export interface DashboardSummary {
   today_spend: number;
   month_spend: number;
+  today_expenses: number;
+  month_expenses: number;
   pending_total: number;
   active_alerts_count: number;
   daily_spend: { date: string; total: number }[];

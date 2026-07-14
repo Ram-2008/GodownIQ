@@ -11,6 +11,22 @@ export function stripWhatsappPrefix(from: string): string {
   return from.replace(/^whatsapp:/i, "").trim();
 }
 
+let twilioClient: ReturnType<typeof twilio> | null = null;
+function getTwilioClient(): ReturnType<typeof twilio> {
+  if (!twilioClient) twilioClient = twilio(env.TWILIO_ACCOUNT_SID, env.TWILIO_AUTH_TOKEN);
+  return twilioClient;
+}
+
+/** Sends an outbound WhatsApp message. No-op (not an error) when Twilio isn't configured. */
+export async function sendWhatsappMessage(to: string, body: string): Promise<void> {
+  if (!env.twilioConfigured) return;
+  await getTwilioClient().messages.create({
+    from: `whatsapp:${env.TWILIO_WHATSAPP_NUMBER}`,
+    to: `whatsapp:${stripWhatsappPrefix(to)}`,
+    body,
+  });
+}
+
 function formatCompactINR(amount: number): string {
   const rounded = Math.round(amount * 100) / 100;
   const formatted = Number.isInteger(rounded)

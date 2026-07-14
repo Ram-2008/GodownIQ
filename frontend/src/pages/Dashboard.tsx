@@ -54,6 +54,7 @@ export function DashboardPage() {
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <StatCard label="Today's spend" value={formatINR(summary.today_spend)} />
         <StatCard label="This month" value={formatINR(summary.month_spend)} />
+        <StatCard label="This month · other expenses" value={formatINR(summary.month_expenses)} />
         <StatCard label="Pending payments" value={formatINR(summary.pending_total)} tone={summary.pending_total > 0 ? "warning" : "default"} />
         <StatCard label="Active alerts" value={String(summary.active_alerts_count)} tone={summary.active_alerts_count > 0 ? "critical" : "default"} />
       </div>

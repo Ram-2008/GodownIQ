@@ -30,7 +30,7 @@ export function ReportsPage() {
       .finally(() => setLoading(false));
   }, [year, month, show]);
 
-  async function handleDownload(kind: "month" | "backup" | "stock") {
+  async function handleDownload(kind: "month" | "backup" | "stock" | "expenses") {
     setDownloading(kind);
     try {
       if (kind === "month") {
@@ -39,6 +39,9 @@ export function ReportsPage() {
       } else if (kind === "backup") {
         const blob = await reportsApi.fullBackupCsv();
         downloadBlob(blob, "godowniq-full-backup.csv");
+      } else if (kind === "expenses") {
+        const blob = await reportsApi.expensesCsv(year, month);
+        downloadBlob(blob, `expenses-${monthValue}.csv`);
       } else {
         const blob = await reportsApi.stockMovementsCsv();
         downloadBlob(blob, "stock-movements.csv");
@@ -129,9 +132,49 @@ export function ReportsPage() {
             </div>
           </div>
 
+          <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+            <h2 className="mb-3 text-sm font-semibold text-gray-700">Other expenses by category</h2>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs uppercase tracking-wide text-gray-400">
+                    <th className="pb-2">Category</th>
+                    <th className="pb-2 text-right">Total</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {report.per_category.map((row) => (
+                    <tr key={row.category}>
+                      <td className="py-2 capitalize">{row.category}</td>
+                      <td className="py-2 text-right font-medium">{formatINR(row.total)}</td>
+                    </tr>
+                  ))}
+                  {report.per_category.length === 0 && (
+                    <tr>
+                      <td colSpan={2} className="py-6 text-center text-gray-400">
+                        No expenses this month.
+                      </td>
+                    </tr>
+                  )}
+                </tbody>
+                {report.per_category.length > 0 && (
+                  <tfoot>
+                    <tr className="border-t border-gray-200 text-sm font-semibold">
+                      <td className="py-2">Total</td>
+                      <td className="py-2 text-right">{formatINR(report.expenses_total)}</td>
+                    </tr>
+                  </tfoot>
+                )}
+              </table>
+            </div>
+          </div>
+
           <div className="flex flex-wrap gap-2">
             <Button variant="secondary" loading={downloading === "month"} onClick={() => handleDownload("month")}>
               Download month CSV
+            </Button>
+            <Button variant="secondary" loading={downloading === "expenses"} onClick={() => handleDownload("expenses")}>
+              Expenses CSV
             </Button>
             <Button variant="secondary" loading={downloading === "stock"} onClick={() => handleDownload("stock")}>
               Stock movements CSV

@@ -6,6 +6,8 @@ export interface MonthlyReport {
   pending_amount: number;
   per_item: { item_id: string; item_name: string; quantity: number; avg_price: number; total: number }[];
   per_supplier: { supplier_id: string | null; supplier_name: string; total: number }[];
+  expenses_total: number;
+  per_category: { category: string; total: number }[];
 }
 
 export const reportsApi = {
@@ -13,6 +15,7 @@ export const reportsApi = {
   purchasesCsv: (year: number, month: number) => apiDownload(`/reports/purchases.csv?year=${year}&month=${month}`),
   fullBackupCsv: () => apiDownload("/reports/purchases/backup.csv"),
   stockMovementsCsv: () => apiDownload("/reports/stock-movements.csv"),
+  expensesCsv: (year: number, month: number) => apiDownload(`/reports/expenses.csv?year=${year}&month=${month}`),
 };
 
 export function downloadBlob(blob: Blob, filename: string) {

@@ -23,7 +23,7 @@ function flattenNames(row: any): PurchaseWithNames {
 
 export async function listPurchases(
   db: SupabaseClient,
-  filters: { from?: string; to?: string; itemId?: string; page: number; pageSize: number }
+  filters: { from?: string; to?: string; itemId?: string; q?: string; page: number; pageSize: number }
 ): Promise<{ purchases: PurchaseWithNames[]; total: number }> {
   let query = db
     .from("purchases")
@@ -35,6 +35,21 @@ export async function listPurchases(
   if (filters.from) query = query.gte("purchase_date", filters.from);
   if (filters.to) query = query.lte("purchase_date", filters.to);
   if (filters.itemId) query = query.eq("item_id", filters.itemId);
+
+  if (filters.q) {
+    const like = `%${filters.q.replace(/[%_]/g, "\\$&")}%`;
+    const [matchingItems, matchingSuppliers] = await Promise.all([
+      db.from("items").select("id").ilike("name", like),
+      db.from("suppliers").select("id").ilike("name", like),
+    ]);
+    const itemIds = (matchingItems.data ?? []).map((row) => row.id);
+    const supplierIds = (matchingSuppliers.data ?? []).map((row) => row.id);
+
+    const orClauses = [`note.ilike.${like}`, `invoice_number.ilike.${like}`];
+    if (itemIds.length) orClauses.push(`item_id.in.(${itemIds.join(",")})`);
+    if (supplierIds.length) orClauses.push(`supplier_id.in.(${supplierIds.join(",")})`);
+    query = query.or(orClauses.join(","));
+  }
 
   const start = (filters.page - 1) * filters.pageSize;
   query = query.range(start, start + filters.pageSize - 1);
@@ -48,6 +63,15 @@ export async function getPurchaseById(db: SupabaseClient, id: string): Promise<P
   const { data, error } = await db.from("purchases").select(SELECT_WITH_NAMES).eq("id", id).is("deleted_at", null).single();
   if (error || !data) throw new NotFoundError("Purchase not found.");
   return flattenNames(data);
+}
+
+export async function getPurchaseBillImageUrl(db: SupabaseClient, id: string): Promise<string> {
+  const purchase = await getPurchaseById(db, id);
+  if (!purchase.bill_image_path) throw new NotFoundError("This purchase has no bill photo attached.");
+
+  const { data, error } = await db.storage.from("bill-photos").createSignedUrl(purchase.bill_image_path, 300);
+  if (error || !data) throw new ApiError(500, "Could not load the bill photo: " + (error?.message ?? "unknown error"));
+  return data.signedUrl;
 }
 
 function isSameUtcDay(isoTimestamp: string): boolean {
@@ -72,7 +96,8 @@ export function assertCanModify(profile: AuthenticatedProfile, purchase: { creat
 export async function createPurchase(
   db: SupabaseClient,
   profile: AuthenticatedProfile,
-  input: CreatePurchaseInput
+  input: CreatePurchaseInput,
+  extra?: { billImagePath?: string }
 ): Promise<PurchaseWithNames> {
   const item = input.item_id
     ? await getItemById(db, input.item_id)
@@ -100,6 +125,7 @@ export async function createPurchase(
       payment_due_date: input.payment_status === "pending" ? input.payment_due_date ?? null : null,
       note: input.note ?? null,
       entry_source: input.entry_source,
+      bill_image_path: extra?.billImagePath ?? null,
       created_by: profile.id,
     })
     .select(SELECT_WITH_NAMES)

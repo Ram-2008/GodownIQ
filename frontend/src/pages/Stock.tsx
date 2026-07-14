@@ -25,6 +25,7 @@ export function StockPage() {
   const [rows, setRows] = useState<StockOverviewRow[]>([]);
   const [allItems, setAllItems] = useState<Item[]>([]);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState("");
 
   const [outItemId, setOutItemId] = useState("");
   const [outQuantity, setOutQuantity] = useState("");
@@ -53,6 +54,9 @@ export function StockPage() {
 
   const trackedItems = allItems.filter((i) => i.track_stock);
   const untrackedItems = allItems.filter((i) => !i.track_stock);
+  const searchLower = search.trim().toLowerCase();
+  const visibleRows = searchLower ? rows.filter((r) => r.name.toLowerCase().includes(searchLower)) : rows;
+  const visibleUntracked = searchLower ? untrackedItems.filter((i) => i.name.toLowerCase().includes(searchLower)) : untrackedItems;
 
   async function handleStockOut(e: React.FormEvent) {
     e.preventDefault();
@@ -112,6 +116,8 @@ export function StockPage() {
     <div className="flex flex-col gap-6">
       <h1 className="text-xl font-bold text-gray-900">Stock</h1>
 
+      <Input placeholder="Search items…" value={search} onChange={(e) => setSearch(e.target.value)} />
+
       <form onSubmit={handleStockOut} className="flex flex-col gap-3 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
         <h2 className="text-sm font-semibold text-gray-700">Stock out</h2>
         <Select label="Item" value={outItemId} onChange={(e) => setOutItemId(e.target.value)} required>
@@ -137,6 +143,8 @@ export function StockPage() {
         <h2 className="mb-3 text-sm font-semibold text-gray-700">Tracked items</h2>
         {trackedItems.length === 0 ? (
           <div className="py-6 text-center text-sm text-gray-400">No tracked items yet.</div>
+        ) : visibleRows.length === 0 ? (
+          <div className="py-6 text-center text-sm text-gray-400">No items match "{search}".</div>
         ) : (
           <div className="overflow-x-auto">
             <table className="w-full text-sm">
@@ -150,7 +158,7 @@ export function StockPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {rows.map((row) => (
+                {visibleRows.map((row) => (
                   <tr key={row.item_id} className={row.is_low_stock ? "bg-red-50" : ""}>
                     <td className="py-2 font-medium text-gray-900">{row.name}</td>
                     <td className="py-2 text-right">
@@ -196,11 +204,11 @@ export function StockPage() {
         )}
       </div>
 
-      {isOwner && untrackedItems.length > 0 && (
+      {isOwner && visibleUntracked.length > 0 && (
         <div className="rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
           <h2 className="mb-3 text-sm font-semibold text-gray-700">Not tracked</h2>
           <div className="flex flex-wrap gap-2">
-            {untrackedItems.map((item) => (
+            {visibleUntracked.map((item) => (
               <button
                 key={item.id}
                 onClick={() => handleEnableTracking(item.id)}
