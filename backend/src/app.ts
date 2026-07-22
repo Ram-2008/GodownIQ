@@ -22,6 +22,7 @@ import { forecastRouter } from "./routes/forecast";
 import { photoEntryRouter } from "./routes/photoEntry";
 import { whatsappRouter } from "./routes/whatsapp";
 import { auditLogRouter } from "./routes/auditLog";
+import { cronRouter } from "./routes/cron";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 
 export function createApp() {
@@ -60,6 +61,7 @@ export function createApp() {
   app.use("/api/photo-entry", photoEntryRouter);
   app.use("/api/webhooks/whatsapp", whatsappRouter);
   app.use("/api/audit-log", auditLogRouter);
+  app.use("/api/cron", cronRouter);
 
   app.use(notFoundHandler);
   app.use(errorHandler);

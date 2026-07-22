@@ -19,6 +19,8 @@ const envSchema = z.object({
   PORT: z.string().optional().default("4000"),
   FRONTEND_URL: z.string().optional().default("http://localhost:5173"),
   NODE_ENV: z.string().optional().default("development"),
+  // Only used on Vercel — validates that /api/cron/daily-alerts was called by Vercel Cron, not the public internet.
+  CRON_SECRET: z.string().optional().default(""),
 });
 
 const parsed = envSchema.safeParse(process.env);
