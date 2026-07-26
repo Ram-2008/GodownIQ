@@ -7,7 +7,7 @@ const envSchema = z.object({
   SUPABASE_URL: z.string().url({ message: "SUPABASE_URL must be a valid URL" }),
   SUPABASE_ANON_KEY: z.string().min(1, "SUPABASE_ANON_KEY is required"),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, "SUPABASE_SERVICE_ROLE_KEY is required"),
-  ANTHROPIC_API_KEY: z.string().optional().default(""),
+  GEMINI_API_KEY: z.string().optional().default(""),
   WHATSAPP_ENABLED: z
     .string()
     .optional()
@@ -36,7 +36,7 @@ export const env = {
   PORT: Number(parsed.data.PORT),
   FRONTEND_URLS: parsed.data.FRONTEND_URL.split(",").map((s) => s.trim()),
   isProduction: parsed.data.NODE_ENV === "production",
-  claudeConfigured: parsed.data.ANTHROPIC_API_KEY.length > 0,
+  geminiConfigured: parsed.data.GEMINI_API_KEY.length > 0,
   twilioConfigured:
     parsed.data.WHATSAPP_ENABLED &&
     parsed.data.TWILIO_ACCOUNT_SID.length > 0 &&

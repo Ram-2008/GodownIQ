@@ -3,7 +3,7 @@ import { format } from "date-fns";
 import { env } from "../config/env";
 import { asyncHandler } from "../middleware/asyncHandler";
 import { supabaseAdmin } from "../config/supabase";
-import { parsePurchaseText } from "../services/claudeService";
+import { parsePurchaseText } from "../services/geminiService";
 import { createPurchase } from "../services/purchaseService";
 import {
   buildConfirmationReply,

@@ -3,7 +3,7 @@ import { authenticate } from "../middleware/auth";
 import { asyncHandler } from "../middleware/asyncHandler";
 import { photoParseRateLimit } from "../middleware/rateLimit";
 import { photoParseRequestSchema, savePhotoEntrySchema } from "../validation/photoEntry";
-import { parseBillPhoto } from "../services/claudeService";
+import { parseBillPhoto } from "../services/geminiService";
 import { saveConfirmedPhotoEntries } from "../services/photoEntryService";
 
 export const photoEntryRouter = Router();

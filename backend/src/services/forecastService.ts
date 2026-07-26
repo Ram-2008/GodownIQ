@@ -1,7 +1,7 @@
 import { SupabaseClient } from "@supabase/supabase-js";
 import { addDays, differenceInCalendarDays, endOfMonth, format, getDay, startOfMonth, subDays, subMonths } from "date-fns";
 import { env } from "../config/env";
-import { extractJsonBlock, getAnthropicClient } from "../config/anthropicClient";
+import { extractJsonBlock, getGeminiClient } from "../config/geminiClient";
 import { ApiError, BadRequestError } from "../middleware/errors";
 import { Unit } from "../types/domain";
 import { forecastAiResponseSchema } from "../validation/forecast";
@@ -9,7 +9,7 @@ import { listItems } from "./itemsService";
 import { getStockOverview } from "./stockService";
 import { createAlert, hasActiveAlert } from "./alertService";
 
-const FORECAST_MODEL = "claude-sonnet-4-6";
+const FORECAST_MODEL = "gemini-3.5-flash";
 const CACHE_FRESHNESS_HOURS = 24;
 const STOCKOUT_ALERT_WINDOW_DAYS = 7;
 
@@ -154,22 +154,15 @@ Guidance:
 - reasoning must be one short sentence explaining the prediction in plain English for a non-technical shop owner.
 - Include every item_id given to you exactly once.`;
 
-async function callClaudeForForecast(stats: ItemForecastStats[]): Promise<Map<string, { predicted_quantity: number; predicted_spend: number; confidence: Confidence; reasoning: string }> | null> {
+async function callGeminiForForecast(stats: ItemForecastStats[]): Promise<Map<string, { predicted_quantity: number; predicted_spend: number; confidence: Confidence; reasoning: string }> | null> {
   try {
-    const response = await getAnthropicClient().messages.create({
+    const response = await getGeminiClient().models.generateContent({
       model: FORECAST_MODEL,
-      max_tokens: 4000,
-      system: FORECAST_SYSTEM_PROMPT,
-      messages: [{ role: "user", content: JSON.stringify(stats) }],
+      contents: JSON.stringify(stats),
+      config: { systemInstruction: FORECAST_SYSTEM_PROMPT, maxOutputTokens: 4000 },
     });
 
-    let rawText: string | null = null;
-    for (const block of response.content) {
-      if (block.type === "text") {
-        rawText = block.text;
-        break;
-      }
-    }
+    const rawText = response.text;
     if (!rawText) return null;
 
     const parsedJson = extractJsonBlock(rawText);
@@ -178,7 +171,7 @@ async function callClaudeForForecast(stats: ItemForecastStats[]): Promise<Map<st
 
     return new Map(result.data.map((r) => [r.item_id, r]));
   } catch (err) {
-    console.error("Claude forecast request failed, using fallback:", err);
+    console.error("Gemini forecast request failed, using fallback:", err);
     return null;
   }
 }
@@ -229,7 +222,7 @@ function withFreshness(generatedAt: string, payload: ForecastPayload): ForecastR
   };
 }
 
-/** GET path: returns the latest cache as-is (generating once if none exists yet); never silently re-spends a Claude call on a stale cache. */
+/** GET path: returns the latest cache as-is (generating once if none exists yet); never silently re-spends a Gemini call on a stale cache. */
 export async function getForecast(db: SupabaseClient): Promise<ForecastResponse> {
   const cached = await getLatestCache(db);
   if (cached) return withFreshness(cached.generated_at, cached.payload);
@@ -245,7 +238,7 @@ export async function regenerateForecast(db: SupabaseClient): Promise<ForecastRe
   }
 
   const stats = await computeItemStats(db);
-  const aiResults = env.claudeConfigured && stats.length > 0 ? await callClaudeForForecast(stats) : null;
+  const aiResults = env.geminiConfigured && stats.length > 0 ? await callGeminiForForecast(stats) : null;
 
   const items: ForecastItemResult[] = stats.map((stat) => {
     const ai = aiResults?.get(stat.item_id);

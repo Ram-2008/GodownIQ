@@ -77,16 +77,33 @@ export function PhotoBillEntry({ onSaved }: { onSaved: () => void }) {
     setRows((prev) => prev.map((row, i) => (i === index ? { ...row, ...patch } : row)));
   }
 
+  function addRow() {
+    setRows((prev) => [...prev, { item_name: "", quantity: "", unit: "kg", unit_price: "", total_amount: "" }]);
+  }
+
+  function removeRow(index: number) {
+    setRows((prev) => prev.filter((_, i) => i !== index));
+  }
+
   async function handleSave() {
+    const line_items = rows.map((r) => ({
+      item_name: r.item_name.trim(),
+      quantity: parseFloat(r.quantity),
+      unit: r.unit,
+      unit_price: parseFloat(r.unit_price),
+      total_amount: parseFloat(r.total_amount),
+    }));
+
+    const invalidIndex = line_items.findIndex(
+      (li) => !li.item_name || !Number.isFinite(li.quantity) || li.quantity <= 0 || !Number.isFinite(li.unit_price) || !Number.isFinite(li.total_amount)
+    );
+    if (invalidIndex !== -1) {
+      show(`Line item ${invalidIndex + 1} needs an item name, quantity, unit price, and total before saving.`, "error");
+      return;
+    }
+
     setSaving(true);
     try {
-      const line_items = rows.map((r) => ({
-        item_name: r.item_name.trim(),
-        quantity: parseFloat(r.quantity),
-        unit: r.unit,
-        unit_price: parseFloat(r.unit_price),
-        total_amount: parseFloat(r.total_amount),
-      }));
       const image_base64 = selectedFile ? await fileToBase64(selectedFile) : undefined;
       const media_type = selectedFile ? ((selectedFile.type || "image/jpeg") as "image/jpeg" | "image/png" | "image/webp") : undefined;
       await photoEntryApi.save({
@@ -163,7 +180,19 @@ export function PhotoBillEntry({ onSaved }: { onSaved: () => void }) {
                 <div className="text-xs font-medium uppercase tracking-wide text-gray-400">Line items</div>
                 {rows.map((row, i) => (
                   <div key={i} className="rounded-lg border border-gray-200 p-3">
-                    <Input label="Item" value={row.item_name} onChange={(e) => updateRow(i, { item_name: e.target.value })} />
+                    <div className="flex items-start gap-2">
+                      <div className="flex-1">
+                        <Input label="Item" value={row.item_name} onChange={(e) => updateRow(i, { item_name: e.target.value })} />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => removeRow(i)}
+                        aria-label="Remove this line item"
+                        className="mt-6 rounded-lg px-2 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50"
+                      >
+                        Remove
+                      </button>
+                    </div>
                     <div className="mt-2 grid grid-cols-2 gap-2">
                       <Input
                         label="Quantity"
@@ -198,6 +227,13 @@ export function PhotoBillEntry({ onSaved }: { onSaved: () => void }) {
                     </div>
                   </div>
                 ))}
+                <button
+                  type="button"
+                  onClick={addRow}
+                  className="rounded-lg border border-dashed border-gray-300 py-2 text-sm font-medium text-gray-600 hover:bg-gray-50"
+                >
+                  + Add item
+                </button>
               </div>
 
               <Button onClick={handleSave} loading={saving} disabled={rows.length === 0}>

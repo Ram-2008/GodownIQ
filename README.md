@@ -12,9 +12,9 @@ get a lightweight AI forecast of what to reorder next.
 - **Database & Auth**: Supabase (Postgres + Supabase Auth). The frontend never talks to
   the database directly — every read/write goes through the backend API, which is the
   only thing holding the Supabase service-role key.
-- **AI**: Anthropic Claude API (natural-language entry, photo bill parsing, demand
+- **AI**: Google Gemini API (natural-language entry, photo bill parsing, demand
   forecast) — every AI feature has a non-AI fallback, so the app is fully usable with
-  no Claude key configured.
+  no Gemini key configured.
 - **WhatsApp**: Twilio WhatsApp API — optional, feature-flagged off by default.
 
 ## Repository layout
@@ -34,7 +34,7 @@ get a lightweight AI forecast of what to reorder next.
 
 - Node.js 20+
 - A free [Supabase](https://supabase.com) account
-- (Optional) An [Anthropic API key](https://console.anthropic.com) for AI features
+- (Optional) A [Gemini API key](https://aistudio.google.com/apikey) for AI features
 - (Optional) A [Twilio](https://www.twilio.com) account for WhatsApp entry
 
 ### Install
@@ -71,7 +71,7 @@ Fill in `backend/.env`:
 | `SUPABASE_URL` | Supabase → Project Settings → API → Project URL |
 | `SUPABASE_ANON_KEY` | Supabase → Project Settings → API → anon public key |
 | `SUPABASE_SERVICE_ROLE_KEY` | Supabase → Project Settings → API → service_role key (secret!) |
-| `ANTHROPIC_API_KEY` | Leave blank to run without AI features, or paste a key from console.anthropic.com |
+| `GEMINI_API_KEY` | Leave blank to run without AI features, or paste a key from aistudio.google.com/apikey |
 | `WHATSAPP_ENABLED` | `false` unless you've set up Twilio (see §4) |
 | `TWILIO_ACCOUNT_SID` / `TWILIO_AUTH_TOKEN` / `TWILIO_WHATSAPP_NUMBER` | Only needed if `WHATSAPP_ENABLED=true` |
 | `FRONTEND_URL` | `http://localhost:5173` for local dev |
@@ -132,7 +132,7 @@ See `backend/.env.example` and `frontend/.env.example` for the authoritative lis
 every variable the app reads is listed there with a comment. Never commit a real
 `.env` file; `.gitignore` already excludes it.
 
-**Security note**: `SUPABASE_SERVICE_ROLE_KEY`, `ANTHROPIC_API_KEY`, and the Twilio
+**Security note**: `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`, and the Twilio
 credentials only ever live in `backend/.env` / your hosting provider's backend
 environment settings. They are never sent to, or readable by, the frontend.
 
@@ -161,7 +161,7 @@ WhatsApp entry is off by default (`WHATSAPP_ENABLED=false`). To turn it on:
    confirmation reply and see the purchase appear in the app.
 
 Messages from numbers not registered on any profile get a polite rejection reply, and
-every inbound message is logged on the backend for debugging. If Claude can't parse a
+every inbound message is logged on the backend for debugging. If Gemini can't parse a
 message clearly, the reply asks the sender to resend in `item quantity price` format —
 nothing is ever auto-saved on an ambiguous read.
 
@@ -193,7 +193,7 @@ nothing is ever auto-saved on an ambiguous read.
 
 - [ ] Sign up as owner on the production URL, promote via SQL as described above.
 - [ ] Invite any staff accounts from the Staff page.
-- [ ] If using AI features, confirm `ANTHROPIC_API_KEY` is set on the backend only.
+- [ ] If using AI features, confirm `GEMINI_API_KEY` is set on the backend only.
 - [ ] If using WhatsApp, point the Twilio sandbox/production webhook at the deployed
       backend URL and register staff WhatsApp numbers.
 - [ ] Do **not** run `npm run seed` against the production database — it's guarded by
@@ -278,8 +278,8 @@ Dismiss any alert once you've dealt with it.
 - Rate limits: natural-language parsing is capped at 30 requests/hour/user, photo
   parsing at 20/day/user, and the AI forecast can only regenerate once every 24 hours
   (cached in between). These are enforced server-side.
-- All Claude and Twilio calls are wrapped in try/catch with a graceful fallback — a
-  Claude or Twilio outage degrades those specific features, never the rest of the app.
+- All Gemini and Twilio calls are wrapped in try/catch with a graceful fallback — a
+  Gemini or Twilio outage degrades those specific features, never the rest of the app.
 - Row Level Security in `supabase/migrations/0001_init.sql` is the real access-control
   boundary (owners full access; staff limited per the role rules above) — the backend's
   role checks are a defense-in-depth / better-error-message layer on top of it, not the

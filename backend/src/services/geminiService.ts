@@ -1,13 +1,13 @@
 import { env } from "../config/env";
-import { extractJsonBlock, getAnthropicClient } from "../config/anthropicClient";
+import { extractJsonBlock, getGeminiClient } from "../config/geminiClient";
 import { ApiError, BadRequestError } from "../middleware/errors";
 import { nlParseResultSchema, NlParseResult } from "../validation/nlEntry";
 import { normalizePhotoParseResult, photoParseResultSchema, PhotoParseResult } from "../validation/photoEntry";
 
 // Model pinned per product spec — this is the app's own runtime dependency on the
-// Claude API, independent of whichever model is answering this coding session.
-const NL_PARSE_MODEL = "claude-sonnet-4-6";
-const PHOTO_PARSE_MODEL = "claude-sonnet-4-6";
+// Gemini API, independent of whichever model is answering this coding session.
+const NL_PARSE_MODEL = "gemini-3.5-flash";
+const PHOTO_PARSE_MODEL = "gemini-3.5-flash";
 
 const SYSTEM_PROMPT = `You extract structured purchase records from short notes written by warehouse staff in India, often in Hinglish (mixed Hindi-English). Never translate item or supplier names — keep them exactly as written (e.g. "chawal" stays "chawal", do not change it to "rice").
 
@@ -21,30 +21,23 @@ Rules:
 - If the text does not clearly describe a single purchase, respond with exactly {"error": "unparseable"} instead.`;
 
 export async function parsePurchaseText(text: string): Promise<NlParseResult> {
-  if (!env.claudeConfigured) {
+  if (!env.geminiConfigured) {
     throw new BadRequestError("AI text parsing isn't set up for this workspace yet. Please fill the form manually.");
   }
 
-  let response;
+  let rawText: string | undefined;
   try {
-    response = await getAnthropicClient().messages.create({
+    const response = await getGeminiClient().models.generateContent({
       model: NL_PARSE_MODEL,
-      max_tokens: 1000,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: "user", content: text }],
+      contents: text,
+      config: { systemInstruction: SYSTEM_PROMPT, maxOutputTokens: 1000 },
     });
+    rawText = response.text;
   } catch (err) {
-    console.error("Claude NL parse request failed:", err);
+    console.error("Gemini NL parse request failed:", err);
     throw new ApiError(502, "Couldn't reach the AI parser. Please fill the form manually.");
   }
 
-  let rawText: string | null = null;
-  for (const block of response.content) {
-    if (block.type === "text") {
-      rawText = block.text;
-      break;
-    }
-  }
   if (!rawText) {
     throw new BadRequestError("Couldn't parse that — please fill the form manually.");
   }
@@ -75,38 +68,28 @@ Rules:
 - If the image does not appear to be a bill or invoice, respond with exactly {"error": "not_a_bill"}.`;
 
 export async function parseBillPhoto(imageBase64: string, mediaType: "image/jpeg" | "image/png" | "image/webp"): Promise<PhotoParseResult> {
-  if (!env.claudeConfigured) {
+  if (!env.geminiConfigured) {
     throw new BadRequestError("AI photo parsing isn't set up for this workspace yet. Please enter the bill manually.");
   }
 
-  let response;
+  let rawText: string | undefined;
   try {
-    response = await getAnthropicClient().messages.create({
+    const response = await getGeminiClient().models.generateContent({
       model: PHOTO_PARSE_MODEL,
-      max_tokens: 2000,
-      system: PHOTO_SYSTEM_PROMPT,
-      messages: [
+      contents: [
         {
           role: "user",
-          content: [
-            { type: "image", source: { type: "base64", media_type: mediaType, data: imageBase64 } },
-            { type: "text", text: "Extract this bill's data as JSON." },
-          ],
+          parts: [{ inlineData: { mimeType: mediaType, data: imageBase64 } }, { text: "Extract this bill's data as JSON." }],
         },
       ],
+      config: { systemInstruction: PHOTO_SYSTEM_PROMPT, maxOutputTokens: 2000 },
     });
+    rawText = response.text;
   } catch (err) {
-    console.error("Claude photo parse request failed:", err);
+    console.error("Gemini photo parse request failed:", err);
     throw new ApiError(502, "Couldn't reach the AI parser. Please enter the bill manually.");
   }
 
-  let rawText: string | null = null;
-  for (const block of response.content) {
-    if (block.type === "text") {
-      rawText = block.text;
-      break;
-    }
-  }
   if (!rawText) {
     throw new BadRequestError("Couldn't read that bill — please enter it manually.");
   }
