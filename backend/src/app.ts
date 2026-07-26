@@ -68,3 +68,8 @@ export function createApp() {
 
   return app;
 }
+
+// Vercel's zero-config Express detection can target this file directly (bypassing
+// api/index.ts) and requires a default export that is itself a function/server —
+// keep this in sync with api/index.ts's own `export default createApp()`.
+export default createApp();
