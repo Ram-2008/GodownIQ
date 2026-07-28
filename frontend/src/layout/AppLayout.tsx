@@ -2,6 +2,7 @@ import { ReactNode, useState } from "react";
 import { NavLink } from "react-router-dom";
 import clsx from "clsx";
 import { useAuth } from "../auth/AuthContext";
+import { Logo } from "../components/Logo";
 import { NAV_ITEMS, MOBILE_PRIMARY_ITEMS } from "./navItems";
 
 function NavLinks({ onNavigate }: { onNavigate?: () => void }) {
@@ -63,7 +64,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
     <div className="min-h-screen bg-gray-50 md:flex">
       {/* Desktop sidebar */}
       <aside className="hidden w-60 shrink-0 border-r border-gray-200 bg-white p-4 md:flex md:flex-col md:gap-1">
-        <div className="mb-4 px-2 text-lg font-bold text-brand-700">GodownIQ</div>
+        <Logo className="mb-4 px-2 text-lg" />
         <NavLinks />
         <div className="mt-auto pt-4 text-sm text-gray-500">
           <div className="px-2">{profile?.full_name}</div>
@@ -83,7 +84,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           >
             ☰
           </button>
-          <div className="text-base font-bold text-brand-700">GodownIQ</div>
+          <Logo className="text-base" />
           <div className="w-9" />
         </header>
 
@@ -91,7 +92,7 @@ export function AppLayout({ children }: { children: ReactNode }) {
           <div className="fixed inset-0 z-50 md:hidden">
             <div className="absolute inset-0 bg-black/30" onClick={() => setDrawerOpen(false)} />
             <div className="absolute left-0 top-0 flex h-full w-64 flex-col gap-1 bg-white p-4 shadow-xl">
-              <div className="mb-4 px-2 text-lg font-bold text-brand-700">GodownIQ</div>
+              <Logo className="mb-4 px-2 text-lg" />
               <NavLinks onNavigate={() => setDrawerOpen(false)} />
               <div className="mt-auto pt-4 text-sm text-gray-500">
                 <div className="px-2">{profile?.full_name}</div>

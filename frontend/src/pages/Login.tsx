@@ -3,6 +3,7 @@ import { Link, Navigate } from "react-router-dom";
 import { useAuth } from "../auth/AuthContext";
 import { Button } from "../components/ui/Button";
 import { Input } from "../components/ui/Input";
+import { Logo } from "../components/Logo";
 
 export function LoginPage() {
   const { session, signIn } = useAuth();
@@ -29,7 +30,7 @@ export function LoginPage() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-gray-50 px-4">
       <div className="w-full max-w-sm rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-        <h1 className="mb-1 text-xl font-bold text-brand-700">GodownIQ</h1>
+        <Logo className="mb-1 text-xl" />
         <p className="mb-6 text-sm text-gray-500">Sign in to your warehouse account</p>
 
         <form onSubmit={handleSubmit} className="flex flex-col gap-4">
