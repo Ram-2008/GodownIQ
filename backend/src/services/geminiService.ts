@@ -1,3 +1,4 @@
+import { ThinkingLevel } from "@google/genai";
 import { env } from "../config/env";
 import { extractJsonBlock, getGeminiClient } from "../config/geminiClient";
 import { ApiError, BadRequestError } from "../middleware/errors";
@@ -30,7 +31,10 @@ export async function parsePurchaseText(text: string): Promise<NlParseResult> {
     const response = await getGeminiClient().models.generateContent({
       model: NL_PARSE_MODEL,
       contents: text,
-      config: { systemInstruction: SYSTEM_PROMPT, maxOutputTokens: 1000 },
+      // This is a deterministic extraction task, not a reasoning task — without capping
+      // thinking, the model can spend most of maxOutputTokens "thinking" and truncate the
+      // actual JSON answer, which shows up as an intermittent, hard-to-reproduce parse failure.
+      config: { systemInstruction: SYSTEM_PROMPT, maxOutputTokens: 1500, thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL } },
     });
     rawText = response.text;
   } catch (err) {
@@ -82,7 +86,7 @@ export async function parseBillPhoto(imageBase64: string, mediaType: "image/jpeg
           parts: [{ inlineData: { mimeType: mediaType, data: imageBase64 } }, { text: "Extract this bill's data as JSON." }],
         },
       ],
-      config: { systemInstruction: PHOTO_SYSTEM_PROMPT, maxOutputTokens: 2000 },
+      config: { systemInstruction: PHOTO_SYSTEM_PROMPT, maxOutputTokens: 3000, thinkingConfig: { thinkingLevel: ThinkingLevel.MINIMAL } },
     });
     rawText = response.text;
   } catch (err) {
