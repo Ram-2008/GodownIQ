@@ -168,8 +168,61 @@ export async function updatePurchase(
   const existing = await getPurchaseById(db, id);
   assertCanModify(profile, existing);
 
-  const patch: Record<string, unknown> = { ...input };
+  const { item_id, item_name, default_unit_for_new_item, ...rest } = input;
+  const patch: Record<string, unknown> = { ...rest };
   if (input.payment_status === "paid") patch.payment_due_date = null;
+
+  if (item_id !== undefined || item_name !== undefined) {
+    const newItem = item_id
+      ? await getItemById(db, item_id)
+      : await findOrCreateItem(db, item_name!, default_unit_for_new_item ?? existing.unit);
+
+    if (newItem.id !== existing.item_id) {
+      // current_stock is maintained by a trigger that only fires on stock_movements INSERT, so
+      // switching a purchase to a different item can't be done by editing the old movement row —
+      // we reverse whatever this purchase originally moved for the old item, then insert a fresh
+      // movement for the new one, keeping both events in the audit trail.
+      const oldItem = await getItemById(db, existing.item_id);
+      if (oldItem.track_stock) {
+        const { data: linkedMovements, error: movementsError } = await db
+          .from("stock_movements")
+          .select("type, quantity")
+          .eq("purchase_id", id);
+        if (movementsError) throw new ApiError(500, movementsError.message);
+        const netIn = (linkedMovements ?? []).reduce(
+          (sum, m: any) => sum + (m.type === "in" ? m.quantity : m.type === "out" ? -m.quantity : 0),
+          0
+        );
+        if (netIn !== 0) {
+          await recordStockMovement(db, {
+            itemId: oldItem.id,
+            type: netIn > 0 ? "out" : "in",
+            quantity: Math.abs(netIn),
+            movementDate: existing.purchase_date,
+            createdBy: profile.id,
+            purchaseId: id,
+            note: "Reversed — item corrected on this purchase",
+          });
+        }
+      }
+
+      if (newItem.track_stock) {
+        await recordStockMovement(db, {
+          itemId: newItem.id,
+          type: "in",
+          quantity: (input.quantity ?? existing.quantity) as number,
+          movementDate: (input.purchase_date ?? existing.purchase_date) as string,
+          createdBy: profile.id,
+          purchaseId: id,
+          note: "Item corrected on this purchase",
+        });
+        const updatedNewItem = await getItemById(db, newItem.id);
+        await checkLowStock(db, updatedNewItem, updatedNewItem.current_stock ?? 0);
+      }
+
+      patch.item_id = newItem.id;
+    }
+  }
 
   const { data, error } = await db.from("purchases").update(patch).eq("id", id).select(SELECT_WITH_NAMES).single();
   if (error || !data) throw new ApiError(500, "Could not update the purchase: " + (error?.message ?? "unknown error"));

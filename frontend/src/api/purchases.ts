@@ -21,6 +21,9 @@ export interface CreatePurchasePayload {
 }
 
 export interface UpdatePurchasePayload {
+  item_id?: string;
+  item_name?: string;
+  default_unit_for_new_item?: Unit;
   quantity?: number;
   unit?: Unit;
   unit_price?: number;

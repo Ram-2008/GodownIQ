@@ -41,6 +41,9 @@ export const createPurchaseSchema = z
 export type CreatePurchaseInput = z.infer<typeof createPurchaseSchema>;
 
 export const updatePurchaseSchema = z.object({
+  item_id: z.string().uuid().optional(),
+  item_name: z.string().trim().min(1).max(120).optional(),
+  default_unit_for_new_item: unitEnum.optional(),
   quantity: positiveQty.optional(),
   unit: unitEnum.optional(),
   unit_price: money.optional(),

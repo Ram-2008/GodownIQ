@@ -7,7 +7,8 @@ import { Autocomplete, AutocompleteOption } from "./ui/Autocomplete";
 import { useToast } from "./Toast";
 import { purchasesApi } from "../api/purchases";
 import { suppliersApi } from "../api/suppliers";
-import { Purchase, Supplier, UNITS, Unit } from "../types/domain";
+import { itemsApi } from "../api/items";
+import { Item, Purchase, Supplier, UNITS, Unit } from "../types/domain";
 
 export function PurchaseEditModal({
   purchase,
@@ -22,6 +23,9 @@ export function PurchaseEditModal({
 }) {
   const { show } = useToast();
   const [suppliers, setSuppliers] = useState<Supplier[]>([]);
+  const [items, setItems] = useState<Item[]>([]);
+  const [itemText, setItemText] = useState(purchase.item_name);
+  const [itemId, setItemId] = useState<string | null>(purchase.item_id);
   const [quantity, setQuantity] = useState(String(purchase.quantity));
   const [unit, setUnit] = useState<Unit>(purchase.unit);
   const [unitPrice, setUnitPrice] = useState(String(purchase.unit_price));
@@ -40,15 +44,21 @@ export function PurchaseEditModal({
 
   useEffect(() => {
     suppliersApi.list().then(setSuppliers).catch(() => undefined);
+    itemsApi.list().then(setItems).catch(() => undefined);
   }, []);
 
   const supplierOptions: AutocompleteOption[] = suppliers.map((s) => ({ id: s.id, name: s.name }));
+  const itemOptions: AutocompleteOption[] = items.map((i) => ({ id: i.id, name: i.name, subtitle: i.default_unit }));
 
   async function handleSave() {
     setSaving(true);
     try {
       const matchedSupplier = suppliers.find((s) => s.id === supplierId && s.name.toLowerCase() === supplierText.trim().toLowerCase());
+      const matchedItem = items.find((i) => i.id === itemId && i.name.toLowerCase() === itemText.trim().toLowerCase());
       const updated = await purchasesApi.update(purchase.id, {
+        item_id: matchedItem?.id,
+        item_name: matchedItem ? undefined : itemText.trim(),
+        default_unit_for_new_item: unit,
         quantity: parseFloat(quantity),
         unit,
         unit_price: parseFloat(unitPrice),
@@ -99,6 +109,19 @@ export function PurchaseEditModal({
   return (
     <Modal title={`Edit ${purchase.item_name}`} onClose={onClose}>
       <div className="flex flex-col gap-4">
+        <Autocomplete
+          label="Item"
+          options={itemOptions}
+          value={itemText}
+          onChange={(text) => {
+            setItemText(text);
+            setItemId(null);
+          }}
+          onSelectExisting={(option) => {
+            setItemText(option.name);
+            setItemId(option.id);
+          }}
+        />
         <div className="grid grid-cols-2 gap-3">
           <Input label="Quantity" type="number" step="0.01" value={quantity} onChange={(e) => setQuantity(e.target.value)} />
           <Select label="Unit" value={unit} onChange={(e) => setUnit(e.target.value as Unit)}>
