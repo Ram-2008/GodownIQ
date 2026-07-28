@@ -3,6 +3,7 @@ import { Modal } from "./ui/Modal";
 import { Button } from "./ui/Button";
 import { Input } from "./ui/Input";
 import { Select } from "./ui/Select";
+import { FirstTimeHint } from "./FirstTimeHint";
 import { useToast } from "./Toast";
 import { fileToBase64, photoEntryApi, PhotoParseResult } from "../api/photoEntry";
 import { ApiClientError } from "../api/client";
@@ -128,6 +129,9 @@ export function PhotoBillEntry({ onSaved }: { onSaved: () => void }) {
 
   return (
     <>
+      <FirstTimeHint id="photo-bill-entry">
+        Snap a photo of a supplier's bill and it'll read out the items, quantities, and prices for you to check before saving.
+      </FirstTimeHint>
       <input
         ref={fileInputRef}
         type="file"
