@@ -22,4 +22,4 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/users", label: "Staff", roles: ["owner"] },
 ];
 
-export const MOBILE_PRIMARY_ITEMS = ["/", "/entry", "/calendar", "/stock"];
+export const MOBILE_PRIMARY_ITEMS = ["/", "/entry", "/purchases", "/stock"];
