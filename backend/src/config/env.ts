@@ -8,6 +8,9 @@ const envSchema = z.object({
   SUPABASE_ANON_KEY: z.string().min(1, "SUPABASE_ANON_KEY is required"),
   SUPABASE_SERVICE_ROLE_KEY: z.string().min(1, "SUPABASE_SERVICE_ROLE_KEY is required"),
   GEMINI_API_KEY: z.string().optional().default(""),
+  HINDSIGHT_API_KEY: z.string().trim().optional().default(""),
+  HINDSIGHT_API_URL: z.string().trim().url().optional().default("https://api.hindsight.vectorize.io"),
+  HINDSIGHT_BANK_ID: z.string().trim().regex(/^[a-zA-Z0-9_-]+$/).max(100).optional().default("godowniq-demo"),
   WHATSAPP_ENABLED: z
     .string()
     .optional()

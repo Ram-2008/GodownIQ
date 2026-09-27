@@ -17,6 +17,7 @@ import { reportsRouter } from "./routes/reports";
 import { stockRouter } from "./routes/stock";
 import { comparisonRouter } from "./routes/comparison";
 import { supplierComparisonRouter } from "./routes/supplierComparison";
+import { supplierIncidentsRouter } from "./routes/supplierIncidents";
 import { nlEntryRouter } from "./routes/nlEntry";
 import { forecastRouter } from "./routes/forecast";
 import { photoEntryRouter } from "./routes/photoEntry";
@@ -56,6 +57,7 @@ export function createApp() {
   app.use("/api/stock", stockRouter);
   app.use("/api/comparison", comparisonRouter);
   app.use("/api/supplier-comparison", supplierComparisonRouter);
+  app.use("/api/supplier-incidents", supplierIncidentsRouter);
   app.use("/api/nl-entry", nlEntryRouter);
   app.use("/api/forecast", forecastRouter);
   app.use("/api/photo-entry", photoEntryRouter);
