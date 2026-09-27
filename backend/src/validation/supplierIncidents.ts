@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { indiaToday } from "../utils/indiaDate";
 
 const dateOnly = z.string().regex(/^\d{4}-\d{2}-\d{2}$/).refine((value) => {
   const date = new Date(`${value}T00:00:00Z`);
@@ -15,6 +16,13 @@ export const createSupplierIncidentSchema = z.object({
   resolved_date: dateOnly.nullable().default(null),
   is_demo: z.boolean().default(false),
 }).strict().superRefine((input, ctx) => {
+  const today = indiaToday();
+  if (input.incident_date > today) {
+    ctx.addIssue({ code: "custom", path: ["incident_date"], message: "An incident must have already happened. Future dates are not allowed." });
+  }
+  if (input.resolved_date && input.resolved_date > today) {
+    ctx.addIssue({ code: "custom", path: ["resolved_date"], message: "Record completed resolutions only. Future resolution dates are not allowed." });
+  }
   if ((input.resolution === null) !== (input.resolved_date === null)) {
     ctx.addIssue({ code: "custom", path: ["resolved_date"], message: "Provide both the resolution and its date, or leave both empty." });
   }

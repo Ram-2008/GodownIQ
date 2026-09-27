@@ -1,5 +1,5 @@
 import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
-import { format } from "date-fns";
+import { indiaToday } from "../utils/indiaDate";
 import { suppliersApi } from "../api/suppliers";
 import { IncidentInput, IncidentType, SupplierIncident, supplierIncidentsApi } from "../api/supplierIncidents";
 import { Supplier } from "../types/domain";
@@ -12,7 +12,7 @@ const TYPES: Record<IncidentType, string> = {
 };
 function newForm(): IncidentInput {
   return {
-    id: crypto.randomUUID(), supplier_id: "", incident_date: format(new Date(), "yyyy-MM-dd"),
+    id: crypto.randomUUID(), supplier_id: "", incident_date: indiaToday(),
     incident_type: "late_delivery", description: "", resolution: null, resolved_date: null, is_demo: false,
   };
 }
@@ -81,6 +81,9 @@ export function SupplierIncidentsPage() {
     if (saveLock.current || syncLock.current) return;
     setFormError("");
     const resolution = form.resolution?.trim() || null;
+    if (form.incident_date > indiaToday() || (form.resolved_date && form.resolved_date > indiaToday())) {
+      setFormError("Use dates on or before today. Record a resolution only after it has happened."); return;
+    }
     if ((resolution === null) !== (form.resolved_date === null)) {
       setFormError("Enter both a resolution and its date, or leave both empty."); return;
     }
@@ -133,7 +136,7 @@ export function SupplierIncidentsPage() {
                 {suppliers.map((supplier) => <option key={supplier.id} value={supplier.id}>{supplier.name}</option>)}
               </Select>
               <div className="grid gap-4 sm:grid-cols-2">
-                <Input id="incident-date" label="Incident date" type="date" required value={form.incident_date} onChange={(e) => setForm({ ...form, incident_date: e.target.value })} />
+                <Input id="incident-date" label="Incident date" type="date" max={indiaToday()} required value={form.incident_date} onChange={(e) => setForm({ ...form, incident_date: e.target.value })} />
                 <Select id="incident-type" label="Problem type" value={form.incident_type} onChange={(e) => setForm({ ...form, incident_type: e.target.value as IncidentType })}>
                   {Object.entries(TYPES).map(([value, label]) => <option key={value} value={value}>{label}</option>)}
                 </Select>
@@ -152,7 +155,7 @@ export function SupplierIncidentsPage() {
                   placeholder="Record only the action and outcome that actually happened."
                   className="w-full rounded-lg border border-gray-300 p-3 text-base focus:outline-none focus:ring-2 focus:ring-brand-500" />
               </div>
-              <Input id="resolution-date" label="Resolution date (if resolved)" type="date" min={form.incident_date} value={form.resolved_date ?? ""}
+              <Input id="resolution-date" label="Resolution date (if resolved)" type="date" min={form.incident_date} max={indiaToday()} value={form.resolved_date ?? ""}
                 onChange={(e) => setForm({ ...form, resolved_date: e.target.value || null })} />
               <label className="flex items-start gap-2 text-sm text-gray-700">
                 <input type="checkbox" checked={form.is_demo} onChange={(e) => setForm({ ...form, is_demo: e.target.checked })} className="mt-1" />

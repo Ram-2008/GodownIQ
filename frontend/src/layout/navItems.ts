@@ -18,6 +18,7 @@ export const NAV_ITEMS: NavItem[] = [
   { to: "/comparison", label: "Monthly Comparison", roles: ["owner"] },
   { to: "/suppliers", label: "Supplier Comparison", roles: ["owner"] },
   { to: "/supplier-incidents", label: "Supplier Incidents", roles: ["owner"] },
+  { to: "/supplier-advisor", label: "Supplier Advisor", roles: ["owner"] },
   { to: "/forecast", label: "Forecast", roles: ["owner"] },
   { to: "/activity", label: "Activity Log", roles: ["owner"] },
   { to: "/users", label: "Staff", roles: ["owner"] },

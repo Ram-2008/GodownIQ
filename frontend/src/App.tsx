@@ -21,6 +21,7 @@ const ReportsPage = lazy(() => import("./pages/Reports").then((m) => ({ default:
 const MonthlyComparisonPage = lazy(() => import("./pages/MonthlyComparison").then((m) => ({ default: m.MonthlyComparisonPage })));
 const SupplierComparisonPage = lazy(() => import("./pages/SupplierComparison").then((m) => ({ default: m.SupplierComparisonPage })));
 const SupplierIncidentsPage = lazy(() => import("./pages/SupplierIncidents").then((m) => ({ default: m.SupplierIncidentsPage })));
+const SupplierAdvisorPage = lazy(() => import("./pages/SupplierAdvisor").then((m) => ({ default: m.SupplierAdvisorPage })));
 const ForecastPage = lazy(() => import("./pages/Forecast").then((m) => ({ default: m.ForecastPage })));
 const ActivityLogPage = lazy(() => import("./pages/ActivityLog").then((m) => ({ default: m.ActivityLogPage })));
 const UsersPage = lazy(() => import("./pages/Users").then((m) => ({ default: m.UsersPage })));
@@ -154,6 +155,9 @@ export default function App() {
               </ProtectedRoute>
             }
           />
+          <Route path="/supplier-advisor" element={
+            <ProtectedRoute roles={["owner"]}><AppLayout><SupplierAdvisorPage /></AppLayout></ProtectedRoute>
+          } />
           <Route
             path="/activity"
             element={
